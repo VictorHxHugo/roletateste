@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Leitura de Colunas - Roleta 2025</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+        background: #f4f4f4;
+        color: #333;
+      }
+
+      h1 {
+        text-align: center;
+        color: #007bff;
+      }
+
+      .container {
+        max-width: 700px;
+        margin: auto;
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px #ccc;
+      }
+
+      input[type="number"] {
+        width: 80px;
+        padding: 5px;
+        font-size: 16px;
+        margin-right: 10px;
+      }
+
+      button {
+        padding: 6px 12px;
+        font-size: 16px;
+        cursor: pointer;
+        background: #007bff;
+        color: white;
+        border: none;
+        border-radius: 4px;
+      }
+
+      .log,
+      .colunas-status,
+      .historico-area,
+      .sugestao {
+        margin-top: 20px;
+        padding: 10px;
+        border-radius: 8px;
+      }
+
+      .log {
+        background: #f0f8ff;
+        white-space: pre-wrap;
+        max-height: 200px;
+        overflow-y: auto;
+      }
+
+      .colunas-status {
+        background: #f8f9fa;
+        display: flex;
+        justify-content: space-around;
+      }
+
+      .coluna {
+        text-align: center;
+        padding: 10px;
+        border-radius: 6px;
+        width: 80px;
+      }
+
+      .forte {
+        background-color: #d4edda;
+        color: #155724;
+        font-weight: bold;
+      }
+      .fraca {
+        background-color: #fff3cd;
+        color: #856404;
+      }
+      .ausente {
+        background-color: #f8d7da;
+        color: #721c24;
+      }
+
+      .historico-area {
+        background: #e2e3e5;
+      }
+
+      .sugestao {
+        background: #e6f7ff;
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>📊 Leitura de Colunas - Estratégia 2025</h1>
+      <input
+        type="number"
+        id="numeroInput"
+        placeholder="Número"
+        min="0"
+        max="36"
+      />
+      <button onclick="registrarNumero()">Registrar</button>
+
+      <div class="colunas-status" id="colunasStatus"></div>
+      <div class="historico-area" id="historicoRodadas"></div>
+      <div class="sugestao" id="sugestaoAposta"></div>
+      <div class="log" id="logArea"></div>
+    </div>
+
+    <script>
+      const historico = [];
+      const colunas = {
+        c1: [1, 4, 7, 10, 13, 16, 19, 22, 25, 28, 31, 34],
+        c2: [2, 5, 8, 11, 14, 17, 20, 23, 26, 29, 32, 35],
+        c3: [3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36],
+      };
+      let padrao = [];
+      let statusGlobal = [];
+
+      function getColuna(num) {
+        if (colunas.c1.includes(num)) return "c1";
+        if (colunas.c2.includes(num)) return "c2";
+        if (colunas.c3.includes(num)) return "c3";
+        return "0";
+      }
+
+      function contarAparicoes(coluna, lista) {
+        return lista.filter((num) => getColuna(num) === coluna).length;
+      }
+
+      function atualizarPadrao() {
+        const ultimos6 = historico.slice(-6);
+        const ultimos3 = historico.slice(-3);
+
+        statusGlobal = ["c1", "c2", "c3"].map((col) => {
+          const aparicoes6 = contarAparicoes(col, ultimos6);
+          const aparicoes3 = contarAparicoes(col, ultimos3);
+          const ultima5 = historico.slice(-5);
+          const ausente5 = !ultima5.some((n) => getColuna(n) === col);
+
+          return {
+            coluna: col,
+            aparicoes6,
+            aparicoes3,
+            ausente5,
+            fraca: aparicoes6 <= 1,
+          };
+        });
+
+        const fortes = statusGlobal.filter(
+          (s) => s.aparicoes6 >= 2 || (s.aparicoes3 >= 1 && !s.fraca)
+        );
+
+        // Proteção de memória
+        const protegidas = statusGlobal.filter((s) => s.aparicoes6 >= 3);
+
+        if (fortes.length < 2) {
+          const maisAtiva = statusGlobal
+            .filter((s) => !fortes.includes(s))
+            .sort((a, b) => b.aparicoes6 - a.aparicoes6)[0];
+          if (maisAtiva) fortes.push(maisAtiva);
+        }
+
+        padrao = [
+          ...new Set([
+            ...fortes.map((s) => s.coluna),
+            ...protegidas.map((p) => p.coluna),
+          ]),
+        ].slice(0, 2);
+      }
+
+      function registrarNumero() {
+        const input = document.getElementById("numeroInput");
+        const valor = parseInt(input.value);
+        if (isNaN(valor) || valor < 0 || valor > 36)
+          return alert("Digite um número de 0 a 36");
+        input.value = "";
+        historico.push(valor);
+        atualizarPadrao();
+        renderizarTudo();
+      }
+
+      function renderizarTudo() {
+        const ultima = historico[historico.length - 1];
+        const col = getColuna(ultima);
+
+        // Log
+        const entrada = `📥 ${ultima} → ${col}`;
+        const padraoTexto = `🎯 Padrão: ${padrao.join(" + ")}`;
+        const log = `${entrada}\n${padraoTexto}\n\n`;
+        document.getElementById("logArea").textContent =
+          log + document.getElementById("logArea").textContent;
+
+        // Status visual
+        const statusArea = document.getElementById("colunasStatus");
+        statusArea.innerHTML = "";
+        statusGlobal.forEach((s) => {
+          const div = document.createElement("div");
+          div.classList.add("coluna");
+          if (s.ausente5) div.classList.add("ausente");
+          else if (s.fraca) div.classList.add("fraca");
+          else div.classList.add("forte");
+          div.innerHTML = `${s.coluna.toUpperCase()}<br>${s.aparicoes6}/6`;
+          statusArea.appendChild(div);
+        });
+
+        // Histórico 6 rodadas
+        const ultimos6 = historico.slice(-6).reverse();
+        document.getElementById(
+          "historicoRodadas"
+        ).innerHTML = `Últimos 6 números: ${ultimos6.join(", ")}`;
+
+        // Sugestão de aposta
+        const sugestao = `🎯 Aposte nas colunas: <span class="highlight">${padrao
+          .join(" + ")
+          .toUpperCase()}</span>`;
+        document.getElementById("sugestaoAposta").innerHTML = sugestao;
+      }
+    </script>
+  </body>
+</html>
