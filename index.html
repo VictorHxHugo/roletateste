@@ -135,35 +135,30 @@
       }
 
       function atualizarPadrao() {
-        const ultimos6 = historico.slice(-6);
-        const ultimos3 = historico.slice(-3);
+        const ultimos20 = historico.slice(-20);
 
         statusGlobal = ["c1", "c2", "c3"].map((col) => {
-          const aparicoes6 = contarAparicoes(col, ultimos6);
-          const aparicoes3 = contarAparicoes(col, ultimos3);
-          const ultima5 = historico.slice(-5);
-          const ausente5 = !ultima5.some((n) => getColuna(n) === col);
+          const aparicoes = contarAparicoes(col, ultimos20);
+          const ausente = !ultimos20.some((n) => getColuna(n) === col);
 
           return {
             coluna: col,
-            aparicoes6,
-            aparicoes3,
-            ausente5,
-            fraca: aparicoes6 <= 1,
+            aparicoes,
+            ausente,
+            fraca: aparicoes <= 3,
           };
         });
 
         const fortes = statusGlobal.filter(
-          (s) => s.aparicoes6 >= 2 || (s.aparicoes3 >= 1 && !s.fraca)
+          (s) => s.aparicoes >= 6 || (!s.fraca && s.aparicoes >= 4)
         );
 
-        // Proteção de memória
-        const protegidas = statusGlobal.filter((s) => s.aparicoes6 >= 3);
+        const protegidas = statusGlobal.filter((s) => s.aparicoes >= 8);
 
         if (fortes.length < 2) {
           const maisAtiva = statusGlobal
             .filter((s) => !fortes.includes(s))
-            .sort((a, b) => b.aparicoes6 - a.aparicoes6)[0];
+            .sort((a, b) => b.aparicoes - a.aparicoes)[0];
           if (maisAtiva) fortes.push(maisAtiva);
         }
 
@@ -203,18 +198,18 @@
         statusGlobal.forEach((s) => {
           const div = document.createElement("div");
           div.classList.add("coluna");
-          if (s.ausente5) div.classList.add("ausente");
+          if (s.ausente) div.classList.add("ausente");
           else if (s.fraca) div.classList.add("fraca");
           else div.classList.add("forte");
-          div.innerHTML = `${s.coluna.toUpperCase()}<br>${s.aparicoes6}/6`;
+          div.innerHTML = `${s.coluna.toUpperCase()}<br>${s.aparicoes}/20`;
           statusArea.appendChild(div);
         });
 
-        // Histórico 6 rodadas
-        const ultimos6 = historico.slice(-6).reverse();
+        // Histórico 20 rodadas
+        const ultimos20 = historico.slice(-20).reverse();
         document.getElementById(
           "historicoRodadas"
-        ).innerHTML = `Últimos 6 números: ${ultimos6.join(", ")}`;
+        ).innerHTML = `Últimos 20 números: ${ultimos20.join(", ")}`;
 
         // Sugestão de aposta
         const sugestao = `🎯 Aposte nas colunas: <span class="highlight">${padrao
@@ -222,6 +217,15 @@
           .toUpperCase()}</span>`;
         document.getElementById("sugestaoAposta").innerHTML = sugestao;
       }
+
+      // Permitir Enter para registrar número
+      document
+        .getElementById("numeroInput")
+        .addEventListener("keydown", function (e) {
+          if (e.key === "Enter") {
+            registrarNumero();
+          }
+        });
     </script>
   </body>
 </html>
